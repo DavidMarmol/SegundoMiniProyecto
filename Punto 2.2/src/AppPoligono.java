@@ -17,14 +17,14 @@ public class AppPoligono {
 
     private static void createAndShowGUI() {
         // Crear la ventana principal
-        JFrame frame = new JFrame("Drawing App");
+        JFrame frame = new JFrame("App de dibujo");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         // Crear el panel de dibujo
         drawingPanel = new DrawingPanel();
 
         // Crear un botón para borrar el dibujo
-        JButton clearButton = new JButton("Clear All");
+        JButton clearButton = new JButton("Limpiar todo");
         clearButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 drawingPanel.clearLines();
@@ -45,7 +45,7 @@ public class AppPoligono {
         // Crear un panel para colocar el botón y el combo box en la parte inferior
         JPanel buttonPanel = new JPanel();
         buttonPanel.add(clearButton);
-        buttonPanel.add(new JLabel("Thickness:"));
+        buttonPanel.add(new JLabel("Grosor:"));
         buttonPanel.add(thicknessComboBox);
 
         // Agregar el panel de dibujo y el panel de botones al marco

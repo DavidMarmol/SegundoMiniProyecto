@@ -3,8 +3,9 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.*;
 import java.util.List;
-
+import java.util.stream.Collectors;
 
 public class FerreteriaPanel extends JPanel {
     private Inventario inventario;
@@ -37,7 +38,7 @@ public class FerreteriaPanel extends JPanel {
         JButton eliminarButton = new JButton("Eliminar Producto");
         eliminarButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-
+                eliminarProducto();
             }
         });
         panelSuperior.add(eliminarButton);
@@ -45,6 +46,7 @@ public class FerreteriaPanel extends JPanel {
         JButton actualizarButton = new JButton("Actualizar Inventario");
         actualizarButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                actualizarInventario();
             }
         });
         panelSuperior.add(actualizarButton);
@@ -52,6 +54,7 @@ public class FerreteriaPanel extends JPanel {
         JButton estadisticasButton = new JButton("Mostrar Estadísticas");
         estadisticasButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                mostrarEstadisticas();
             }
         });
         panelSuperior.add(estadisticasButton);
@@ -156,8 +159,91 @@ public class FerreteriaPanel extends JPanel {
         actualizarListaProductos();
     }
 
-   
- 
+    private void eliminarProducto() {
+        String nombre = JOptionPane.showInputDialog(null, "Ingrese el nombre del producto a eliminar:");
+        if (nombre != null && !nombre.isEmpty()) {
+            boolean eliminado = inventario.eliminarProducto(nombre);
+            if (eliminado) {
+                JOptionPane.showMessageDialog(null, "Producto eliminado correctamente", "Información", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(null, "No se encontró el producto", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+
+            actualizarListaProductos();
+        }
+    }
+
+    private void actualizarInventario() {
+        String nombre = JOptionPane.showInputDialog(null, "Ingrese el nombre del producto a actualizar:");
+        if (nombre != null && !nombre.isEmpty()) {
+            Producto producto = inventario.buscarProducto(nombre);
+            if (producto != null) {
+                String[] opciones = {"Aumentar", "Vender"}; 
+                int seleccion = JOptionPane.showOptionDialog(null, "¿Desea aumentar o vender la cantidad del producto?", "Actualizar Inventario", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opciones, opciones[0]);
+                int cantidad = 0;
+                try {
+                    cantidad = Integer.parseInt(JOptionPane.showInputDialog(null, "Ingrese la cantidad a " + (seleccion == 0 ? "aumentar" : "vender") + ":"));
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(null, "Cantidad inválida", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                if (seleccion == 0) {
+                    producto.setCantidad(producto.getCantidad() + cantidad);
+                } else {
+                    if (cantidad > producto.getCantidad()) {
+                        JOptionPane.showMessageDialog(null, "No puedes vender más de lo que tienes en stock", "Error", JOptionPane.ERROR_MESSAGE);
+                    } else {
+                        producto.setCantidad(producto.getCantidad() - cantidad);
+                        JOptionPane.showMessageDialog(null, "¡Venta realizada con exito!", "Información", JOptionPane.INFORMATION_MESSAGE);
+                    }
+                }
+                actualizarListaProductos();
+            } else {
+                JOptionPane.showMessageDialog(null, "Producto no encontrado", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void mostrarEstadisticas() {
+        // Precio total de todos los productos del inventario
+        double precioTotal = inventario.getPrecioTotal();
+
+        // Productos con más y menos stock
+        List<Producto> productos = inventario.getProductos();
+        List<Producto> productosMasStock = productos.stream()
+                .sorted((p1, p2) -> p2.getCantidad() - p1.getCantidad())
+                .limit(2)
+                .collect(Collectors.toList());
+        List<Producto> productosMenosStock = productos.stream()
+                .sorted((p1, p2) -> p1.getCantidad() - p2.getCantidad())
+                .limit(2)
+                .collect(Collectors.toList());
+
+        Map<String, Integer> herramientasUtilizadas = inventario.herramientasMasUtilizadas();
+
+        List<Map.Entry<String, Integer>> sortedEntries = new ArrayList<>(herramientasUtilizadas.entrySet());
+        sortedEntries.sort(Map.Entry.<String, Integer>comparingByValue().reversed());
+        StringBuilder herramientasStr = new StringBuilder();
+        for (Map.Entry<String, Integer> entry : sortedEntries) {
+            herramientasStr.append(entry.getKey()).append("=").append(entry.getValue()).append(", ");
+        }
+        if (herramientasStr.length() > 0) {
+            herramientasStr.setLength(herramientasStr.length() - 2);
+        }
+
+        StringBuilder estadisticas = new StringBuilder();
+        estadisticas.append("Precio total de todos los productos en inventario: ").append(precioTotal).append("\n");
+        if (!productos.isEmpty()) {
+            estadisticas.append("Productos con más stock: ").append(productosMasStock.stream().map(Producto::getNombre).collect(Collectors.joining(", "))).append("\n");
+            estadisticas.append("Productos con menos stock: ").append(productosMenosStock.stream().map(Producto::getNombre).collect(Collectors.joining(", "))).append("\n");
+        } else {
+            estadisticas.append("No hay productos en el inventario\n");
+        }
+        estadisticas.append("Herramientas más utilizadas: ").append(herramientasStr).append("\n");
+
+        JOptionPane.showMessageDialog(null, estadisticas.toString(), "Estadísticas del Inventario", JOptionPane.INFORMATION_MESSAGE);
+    }
+
     public static void main(String[] args) {
         JFrame frame = new JFrame("Ferretería");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
